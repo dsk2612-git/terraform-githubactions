@@ -45,6 +45,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # Load dev/prod configs
       - name: Load environment config
         run: |
           if [ "${{ github.event.inputs.environment }}" = "dev" ]; then
@@ -54,7 +55,6 @@ jobs:
             source ./prodconfig.sh
             echo "TF_VAR_env_name=prod" >> $GITHUB_ENV
           fi
-          # export all TF_VAR_* variables to GitHub Actions environment
           env | grep TF_VAR_ >> $GITHUB_ENV
 
       - name: Terraform Init
@@ -78,4 +78,21 @@ jobs:
             echo "Unknown action: ${{ github.event.inputs.action }}"
             exit 1
           fi
+
+      
+      # Health check for app
+      - name: Validate App Health
+        if: ${{ github.event.inputs.action == 'apply' }}
+        run: |
+          echo "Checking App Health..."
+          for i in {1..5}; do
+            if curl -s --head http://${{ env.EC2_PUBLIC_IP }}:80 | grep "200 OK" > /dev/null; then
+              echo "✅ App is healthy and serving traffic"
+              exit 0
+            fi
+            echo "Waiting for app to start..."
+            sleep 15
+          done
+          echo "❌ App failed health check"
+          exit 1
 
