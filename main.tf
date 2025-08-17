@@ -11,6 +11,4 @@ resource "aws_instance" "dev" {
       Name = "dev"
     }
 }
-resource "aws_s3_bucket" "dsk" {
-  bucket = "dsk-123465878fhdfgf"
-}
+

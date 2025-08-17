@@ -1,10 +1,16 @@
 name: Terraform Deployment
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+    inputs:
+      action:
+        description: "Choose Terraform action"
+        required: true
+        default: "apply"
+        type: choice
+        options:
+          - apply
+          - destroy
 
 jobs:
   terraform:
@@ -12,7 +18,7 @@ jobs:
 
     env:
       AWS_REGION: eu-north-1
-      TF_BUCKET: dsk-123465878fhdfgf   # your S3 bucket name
+      TF_BUCKET: dsk-123465878fhdfgf
       TF_STATE_KEY: dev/terraform.tfstate
       TF_REGION: eu-north-1
 
@@ -43,6 +49,14 @@ jobs:
       - name: Terraform Plan
         run: terraform plan -input=false
 
-      - name: Terraform Apply
-        if: github.ref == 'refs/heads/main'
-        run: terraform destroy -auto-approve -input=false
+      - name: Terraform Action (Apply/Destroy)
+        run: |
+          if [ "${{ github.event.inputs.action }}" = "apply" ]; then
+            terraform apply -auto-approve -input=false
+          elif [ "${{ github.event.inputs.action }}" = "destroy" ]; then
+            terraform destroy -auto-approve -input=false
+          else
+            echo "Unknown action: ${{ github.event.inputs.action }}"
+            exit 1
+          fi
+
