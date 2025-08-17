@@ -103,7 +103,7 @@ jobs:
         run: |
           echo "Checking App Health on ${{ env.EC2_PUBLIC_IP }} ..."
           for i in {1..5}; do
-            if curl -s --head http://${{ env.EC2_PUBLIC_IP }}:80/hello | grep "200 OK" > /dev/null; then
+            if curl -s --head http://${{ env.EC2_PUBLIC_IP }}:8080 | grep "200 OK" > /dev/null; then
               echo "✅ App is healthy and serving traffic"
               exit 0
             fi
