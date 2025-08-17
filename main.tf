@@ -1,7 +1,7 @@
 # Key Pair (different name for each env so no conflict)
 resource "aws_key_pair" "example" {
   key_name   = var.key_name
-  public_key = file("~/.ssh/id_ed25519.pub")
+  public_key = var.ssh_public_key
 }
 
 resource "aws_vpc" "myvpc" {
@@ -86,7 +86,7 @@ resource "aws_instance" "server" {
   connection {
     type        = "ssh"
     user        = "ec2-user"
-    private_key = file("~/.ssh/id_ed25519")
+    private_key = var.ssh_private_key
     host        = self.public_ip
   }
 
