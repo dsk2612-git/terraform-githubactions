@@ -62,7 +62,10 @@ jobs:
         run: echo "TF_VAR_ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" >> $GITHUB_ENV
 
       - name: Set SSH private key for Terraform
-        run: echo "TF_VAR_ssh_private_key=${{ secrets.SSH_PRIVATE_KEY }}" >> $GITHUB_ENV
+        run: |
+          echo "TF_VAR_ssh_private_key<<EOF" >> $GITHUB_ENV
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Terraform Init
         run: |
@@ -109,4 +112,3 @@ jobs:
           done
           echo "❌ App failed health check"
           exit 1
-
