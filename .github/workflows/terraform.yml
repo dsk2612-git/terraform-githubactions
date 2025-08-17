@@ -3,8 +3,16 @@ name: Terraform Deployment
 on:
   workflow_dispatch:
     inputs:
+      environment:
+        description: "Choose environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - prod
       action:
-        description: "Choose Terraform action"
+        description: "Terraform action"
         required: true
         default: "apply"
         type: choice
@@ -19,7 +27,6 @@ jobs:
     env:
       AWS_REGION: eu-north-1
       TF_BUCKET: dsk-123465878fhdfgf
-      TF_STATE_KEY: dev/terraform.tfstate
       TF_REGION: eu-north-1
 
     steps:
@@ -38,11 +45,23 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Load environment config
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "dev" ]; then
+            source ./devconfig.sh
+            echo "TF_VAR_env_name=dev" >> $GITHUB_ENV
+          else
+            source ./prodconfig.sh
+            echo "TF_VAR_env_name=prod" >> $GITHUB_ENV
+          fi
+          # export all TF_VAR_* variables to GitHub Actions environment
+          env | grep TF_VAR_ >> $GITHUB_ENV
+
       - name: Terraform Init
         run: |
-          terraform init \
+          terraform init -reconfigure \
             -backend-config="bucket=${{ env.TF_BUCKET }}" \
-            -backend-config="key=${{ env.TF_STATE_KEY }}" \
+            -backend-config="key=${{ github.event.inputs.environment }}/terraform.tfstate" \
             -backend-config="region=${{ env.TF_REGION }}" \
             -backend-config="encrypt=true"
 
