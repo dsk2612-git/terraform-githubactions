@@ -12,8 +12,8 @@ jobs:
 
     env:
       AWS_REGION: eu-north-1
-      TF_BUCKET: dsk-123465878fhdfgf   # replace with your S3 bucket name
-      TF_STATE_KEY: dev/terraform.tfstate    # path inside S3 bucket
+      TF_BUCKET: dsk-123465878fhdfgf   # your S3 bucket name
+      TF_STATE_KEY: dev/terraform.tfstate
       TF_REGION: eu-north-1
 
     steps:
@@ -33,11 +33,12 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Init
-        run: terraform init \
-          -backend-config="bucket=${{ env.TF_BUCKET }}" \
-          -backend-config="key=${{ env.TF_STATE_KEY }}" \
-          -backend-config="region=${{ env.TF_REGION }}" \
-          -backend-config="encrypt=true"
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ env.TF_BUCKET }}" \
+            -backend-config="key=${{ env.TF_STATE_KEY }}" \
+            -backend-config="region=${{ env.TF_REGION }}" \
+            -backend-config="encrypt=true"
 
       - name: Terraform Plan
         run: terraform plan -input=false
@@ -45,4 +46,3 @@ jobs:
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve -input=false
-
