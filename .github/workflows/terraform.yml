@@ -1,0 +1,48 @@
+name: Terraform Deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: eu-north-1
+      TF_BUCKET: dsk-123465878fhdfgf   # replace with your S3 bucket name
+      TF_STATE_KEY: dev/terraform.tfstate    # path inside S3 bucket
+      TF_REGION: eu-north-1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init \
+          -backend-config="bucket=${{ env.TF_BUCKET }}" \
+          -backend-config="key=${{ env.TF_STATE_KEY }}" \
+          -backend-config="region=${{ env.TF_REGION }}" \
+          -backend-config="encrypt=true"
+
+      - name: Terraform Plan
+        run: terraform plan -input=false
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve -input=false
+
