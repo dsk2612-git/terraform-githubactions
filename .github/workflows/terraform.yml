@@ -57,6 +57,13 @@ jobs:
           fi
           env | grep TF_VAR_ >> $GITHUB_ENV
 
+      # 🔑 Inject SSH keys into Terraform variables
+      - name: Set SSH public key for Terraform
+        run: echo "TF_VAR_ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" >> $GITHUB_ENV
+
+      - name: Set SSH private key for Terraform
+        run: echo "TF_VAR_ssh_private_key=${{ secrets.SSH_PRIVATE_KEY }}" >> $GITHUB_ENV
+
       - name: Terraform Init
         run: |
           terraform init -reconfigure \
@@ -79,18 +86,25 @@ jobs:
             exit 1
           fi
 
-      
-      # Health check for app
+      # 📌 Capture EC2 Public IP from Terraform output
+      - name: Get EC2 Public IP
+        if: ${{ github.event.inputs.action == 'apply' }}
+        run: |
+          EC2_IP=$(terraform output -raw ec2_public_ip)
+          echo "EC2_PUBLIC_IP=$EC2_IP" >> $GITHUB_ENV
+          echo "EC2 Public IP is: $EC2_IP"
+
+      # ✅ Health check for app
       - name: Validate App Health
         if: ${{ github.event.inputs.action == 'apply' }}
         run: |
-          echo "Checking App Health..."
+          echo "Checking App Health on ${{ env.EC2_PUBLIC_IP }} ..."
           for i in {1..5}; do
             if curl -s --head http://${{ env.EC2_PUBLIC_IP }}:80 | grep "200 OK" > /dev/null; then
               echo "✅ App is healthy and serving traffic"
               exit 0
             fi
-            echo "Waiting for app to start..."
+            echo "⏳ Waiting for app to start..."
             sleep 15
           done
           echo "❌ App failed health check"
